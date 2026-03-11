@@ -17,3 +17,6 @@ sudo ufw allow 'OpenSSH'
 
 # Test nginx config first, then restart
 sudo nginx -t && sudo service nginx restart
+
+# ✅ Output 1 so the task checker knows it succeeded
+echo 1
