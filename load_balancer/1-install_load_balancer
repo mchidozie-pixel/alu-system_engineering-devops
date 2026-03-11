@@ -1,4 +1,3 @@
-
 #!/usr/bin/env bash
 # Installs and configures HAProxy to distribute traffic to web-01 and web-02 using roundrobin
 
@@ -10,7 +9,7 @@ sudo apt-get install -y haproxy
 echo "ENABLED=1" | sudo tee /etc/default/haproxy > /dev/null
 
 # Configure HAProxy
-sudo tee /etc/haproxy/haproxy.cfg > /dev/null <<EOF
+sudo tee /etc/haproxy/haproxy.cfg <<EOF
 global
     log /dev/log local0
     log /dev/log local1 notice
@@ -36,8 +35,8 @@ frontend http_front
 
 backend http_back
     balance roundrobin
-    server 6973-web-01 35.171.18.95:80 check
-    server 6973-web-02 184.72.182.76:80 check
+    server <STUDENT_ID>-web-01 44.201.79.14:80 check
+    server <STUDENT_ID>-web-02 3.86.212.68:80 check
 EOF
 
 # Restart HAProxy to apply configuration
