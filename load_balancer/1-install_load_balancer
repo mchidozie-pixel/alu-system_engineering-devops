@@ -1,60 +1,44 @@
 #!/usr/bin/env bash
-# Configures a brand new Ubuntu server to add a custom HTTP response header X-Served-By
-# The header contains the server hostname (web-01 or web-02) for load balancer tracking
+# Installs and configures HAProxy to distribute traffic to web-01 and web-02 using roundrobin
 
-# Exit immediately if a command fails
-set -e
+# Update package list and install HAProxy
+apt-get update -y
+apt-get install -y haproxy
 
-# ----------------------------
-# 1. Set hostname for the server
-# ----------------------------
-# Change <STUDENT_ID> to your actual student ID
-STUDENT_ID="6973"
+# Enable HAProxy to be started by init script
+echo "ENABLED=1" | tee /etc/default/haproxy > /dev/null
 
-# Detect if this is web-01 or web-02 based on an argument or existing hostname
-# You can call the script with argument: ./0-custom_http_response_header web-01
-if [ "$1" == "web-01" ]; then
-    TARGET_HOSTNAME="${STUDENT_ID}-web-01"
-elif [ "$1" == "web-02" ]; then
-    TARGET_HOSTNAME="${STUDENT_ID}-web-02"
-else
-    echo "Please run the script with argument 'web-01' or 'web-02'"
-    exit 1
-fi
+# Configure HAProxy
+# Note: Using your ID 7010 and the IPs provided in your initial prompt
+tee /etc/haproxy/haproxy.cfg > /dev/null <<EOF
+global
+    log /dev/log local0
+    log /dev/log local1 notice
+    chroot /var/lib/haproxy
+    stats socket /run/haproxy/admin.sock mode 660 level admin
+    stats timeout 30s
+    user haproxy
+    group haproxy
+    daemon
 
-# Set the hostname
-sudo hostnamectl set-hostname "$TARGET_HOSTNAME"
+defaults
+    log     global
+    mode    http
+    option  httplog
+    option  dontlognull
+    timeout connect 5000
+    timeout client  50000
+    timeout server  50000
 
-# ----------------------------
-# 2. Install Nginx
-# ----------------------------
-sudo apt-get update -y
-sudo apt-get install -y nginx
+frontend http_front
+    bind *:80
+    default_backend http_back
 
-# ----------------------------
-# 3. Add custom HTTP header X-Served-By
-# ----------------------------
-# Use conf.d folder for cleanliness
-sudo bash -c "cat > /etc/nginx/conf.d/custom_header.conf <<EOL
-add_header X-Served-By \"$TARGET_HOSTNAME\";
-EOL"
+backend http_back
+    balance roundrobin
+    server 7010-web-01 44.201.79.14:80 check
+    server 7010-web-02 3.86.212.68:80 check
+EOF
 
-# ----------------------------
-# 4. Allow HTTP and SSH through firewall
-# ----------------------------
-sudo ufw allow 'Nginx HTTP'
-sudo ufw allow 'OpenSSH'
-sudo ufw --force enable
-
-# ----------------------------
-# 5. Test Nginx config and restart
-# ----------------------------
-sudo nginx -t
-sudo systemctl restart nginx
-
-# ----------------------------
-# 6. Output info for verification
-# ----------------------------
-echo "Server hostname: $TARGET_HOSTNAME"
-echo "X-Served-By header configured. Test with:"
-echo "curl -sI http://<server-IP> | grep X-Served-By"
+# Restart HAProxy to apply configuration
+service haproxy restart
