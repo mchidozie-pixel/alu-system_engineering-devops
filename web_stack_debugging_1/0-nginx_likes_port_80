@@ -1,4 +1,3 @@
-#!/usr/bin/env bash
-# The server was initially listening on port 8080 instead of 80.
-sed -i 's|8080|80|g' /etc/nginx/sites-enabled/default
-sudo service nginx restart
+chmod +x 0-nginx_likes_port_80
+./0-nginx_likes_port_80
+curl -I 0:80   # Should show HTTP/1.1 200 OK
